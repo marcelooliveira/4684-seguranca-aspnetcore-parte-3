@@ -155,7 +155,6 @@ coverage*.info
 
 # NCrunch
 _NCrunch_*
-.NCrunch_*
 .*crunch*.local.xml
 nCrunchTemp_*
 
@@ -399,3 +398,14 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+/MedVoll.Identity.API/vollmed.db
+/MedVoll.Identity.API/vollmed.db-shm
+/MedVoll.Identity.API/vollmed.db-wal
+/MedVoll.Web/vollmed.db
+/MedVoll.Web/vollmed.db-shm
+/MedVoll.Web/vollmed.db-wal
+/MedVoll.Identity/AspIdUsers.db
+/MedVoll.WebAPI/vollmed.db
+/MedVoll.WebAPI/vollmed.db
+/MedVoll.Identity/AspIdUsers.db-shm
+/MedVoll.Identity/AspIdUsers.db-wal

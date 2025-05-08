@@ -6,62 +6,66 @@ using System.Text;
 
 namespace MedVoll.Web.Services
 {
-    delegate Task<HttpResponseMessage> HttpVerbMethod(Uri requestUri, HttpContent content);
+    delegate Task<HttpResponseMessage> HttpVerbMethodUri(Uri requestUri, HttpContent content);
+    delegate Task<HttpResponseMessage> HttpVerbMethodString(string requestUri, HttpContent content);
 
     public abstract class BaseHttpService : IService, IBaseHttpService
     {
         protected readonly IConfiguration _configuration;
-        protected readonly HttpClient _httpClient;
-        protected string _baseUri;
-        protected HttpContext _httpContext;
+        protected readonly IHttpClientFactory _httpClientFactory;
+        protected HttpContext _httpContext = null;
 
-        public BaseHttpService(IConfiguration configuration, HttpClient httpClient)
+        public BaseHttpService(IConfiguration configuration, IHttpClientFactory httpClientFactory)
         {
             _configuration = configuration;
-            _httpClient = httpClient;
+            _httpClientFactory = httpClientFactory;
         }
 
         public abstract string Scope { get; }
 
         protected async Task<T> GetAsync<T>(string uri, params object[] param)
         {
-            string requestUri =
-                string.Format(new Uri(new Uri(_baseUri), uri).ToString(), param);
+            var requestUri = string.Format(uri, param);
 
             foreach (var par in param)
             {
                 requestUri += string.Format($"/{par}");
             }
 
-            var json = await _httpClient.GetStringAsync(requestUri);
+            using HttpClient httpClient = await GetHttpClientAsync();
+
+            var json = await httpClient.GetStringAsync(requestUri);
             return JsonConvert.DeserializeObject<T>(json);
         }
 
         protected async Task<T> PutOrPostAsync<T>(string uri, object content)
         {
-            HttpVerbMethod httpVerbMethod = new HttpVerbMethod(_httpClient.PutAsync);
+            using HttpClient httpClient = await GetHttpClientAsync();
+
+            var httpVerbMethod = new HttpVerbMethodString(httpClient.PutAsync);
             return await PutOrPostAsync<T>(uri, content, httpVerbMethod);
         }
 
         protected async Task DeleteAsync<T>(string uri, params object[] param)
         {
-            string requestUri =
-                string.Format(new Uri(new Uri(_baseUri), uri).ToString(), param);
+            var requestUri = string.Format(uri, param);
 
             foreach (var par in param)
             {
                 requestUri += string.Format($"/{par}");
             }
 
-            var json = await _httpClient.DeleteAsync(requestUri);
+            using HttpClient httpClient = await GetHttpClientAsync();
+
+            var json = await httpClient.DeleteAsync(requestUri);
         }
 
-        private async Task<T> PutOrPostAsync<T>(string uri, object content, HttpVerbMethod httpVerbMethod)
+        private async Task<T> PutOrPostAsync<T>(string uri, object content, HttpVerbMethodString httpVerbMethod)
         {
             var jsonIn = JsonConvert.SerializeObject(content);
             var stringContent = new StringContent(jsonIn, Encoding.UTF8, "application/json");
 
-            HttpResponseMessage httpResponse = await httpVerbMethod(new Uri(new Uri(_baseUri), uri), stringContent);
+            HttpResponseMessage httpResponse = await httpVerbMethod(uri, stringContent);
             if (!httpResponse.IsSuccessStatusCode)
             {
                 var errorContent = await httpResponse.Content.ReadAsStringAsync();
@@ -70,5 +74,12 @@ namespace MedVoll.Web.Services
             var jsonOut = await httpResponse.Content.ReadAsStringAsync();
             return JsonConvert.DeserializeObject<T>(jsonOut);
         }
+
+        private async Task<HttpClient> GetHttpClientAsync()
+        {
+            HttpClient httpClient = _httpClientFactory.CreateClient(_configuration["MedVoll.WebApi.Name"] ?? "");
+            return httpClient;
+        }
     }
 }
+

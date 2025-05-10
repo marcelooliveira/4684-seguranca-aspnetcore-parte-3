@@ -19,6 +19,19 @@ builder.Services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
 builder.Services.AddRazorPages();
 
+builder.Services.AddTransient<IMedVollApiService, MedVollApiService>();
+
+var httpClientName = builder.Configuration["MedVoll.WebApi.Name"];
+var httpClientUrl = builder.Configuration["MedVoll.WebApi.Url"];
+
+builder.Services.AddHttpClient(
+    httpClientName,
+    client =>
+    {
+        // Configura o endereço-base do cliente nomeado.
+        client.BaseAddress = new Uri(httpClientUrl);
+    });
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())

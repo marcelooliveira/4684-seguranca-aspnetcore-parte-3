@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace MedVoll.WebAPI.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class MedicoController : ControllerBase

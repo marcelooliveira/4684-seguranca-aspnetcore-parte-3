@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace MedVoll.Web.Controllers
 {
-    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class ConsultaController : ControllerBase

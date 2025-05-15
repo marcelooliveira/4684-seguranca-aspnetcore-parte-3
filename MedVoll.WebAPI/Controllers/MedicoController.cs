@@ -2,10 +2,12 @@
 using MedVoll.Web.Exceptions;
 using MedVoll.Web.Interfaces;
 using MedVoll.Web.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MedVoll.WebAPI.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class MedicoController : ControllerBase

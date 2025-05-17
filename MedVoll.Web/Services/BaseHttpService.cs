@@ -78,7 +78,14 @@ namespace MedVoll.Web.Services
         private async Task<HttpClient> GetHttpClientAsync()
         {
             HttpClient httpClient = _httpClientFactory.CreateClient(_configuration["MedVoll.WebApi.Name"] ?? "");
+            await SetToken(httpClient);
             return httpClient;
+        }
+
+        private async Task SetToken(HttpClient httpClient)
+        {
+            var accessToken = await _httpContext.GetTokenAsync("access_token");
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
         }
     }
 }

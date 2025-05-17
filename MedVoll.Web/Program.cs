@@ -2,6 +2,7 @@ using MedVoll.Web.Filters;
 using MedVoll.Web.Interfaces;
 using MedVoll.Web.Services;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -32,6 +33,43 @@ builder.Services.AddHttpClient(
         client.BaseAddress = new Uri(httpClientUrl);
     });
 
+JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
+
+builder.Services
+    .AddAuthentication(options =>
+    {
+        options.DefaultScheme = "Cookies";
+        options.DefaultChallengeScheme = "oidc";
+    })
+    .AddCookie("Cookies", options =>
+    {
+        options.Cookie.Name = "VollMedAuthCookie";
+        options.LoginPath = "/Account/Login";
+        options.AccessDeniedPath = "/Account/AccessDenied";
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(5);
+        options.SlidingExpiration = true;
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.Cookie.SameSite = SameSiteMode.Strict;
+    })
+    .AddOpenIdConnect("oidc", options =>
+    {
+        options.Authority = builder.Configuration["MedVoll.Identity.Url"];
+        options.ClientId = "MedVoll.Web";
+        options.ClientSecret = "secret";
+        options.ResponseType = "code";
+
+        options.Scope.Clear();
+        options.Scope.Add("openid");
+        options.Scope.Add("profile");
+        options.Scope.Add("MedVoll.WebAPI");
+
+        options.GetClaimsFromUserInfoEndpoint = true;
+        options.MapInboundClaims = false;
+        options.SaveTokens = true;
+    });
+
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -45,6 +83,9 @@ else
 }
 
 app.UseStaticFiles();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.UseRouting();
 

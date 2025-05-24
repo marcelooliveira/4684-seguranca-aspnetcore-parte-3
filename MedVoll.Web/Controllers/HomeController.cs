@@ -1,4 +1,5 @@
 ﻿using MedVoll.Web.Models;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
@@ -19,6 +20,18 @@ namespace MedVoll.Web.Controllers
         {
             return View();
         }
+
+        [HttpPost]
+        public IActionResult Logout()
+        {
+            return SignOut(new AuthenticationProperties
+            {
+                RedirectUri = "/"
+            },
+            "Cookies",     // Faz o sign-out do cookie local
+            "oidc");       // Faz o sign-out do provedor externo (OpenID Connect)
+        }
+
 
         public IActionResult Privacy()
         {

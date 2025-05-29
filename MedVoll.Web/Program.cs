@@ -4,6 +4,7 @@ using MedVoll.Web.Services;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -45,6 +46,27 @@ builder.Services.AddHttpClient(
         options.Retry.Delay = TimeSpan.FromSeconds(5); // Intervalo entre tentativas
     });
 
+builder.Services.AddRateLimiter(options =>
+{
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.User?.Identity?.Name ?? context.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
+            factory: partition => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5, // até 5 requisições
+                Window = TimeSpan.FromSeconds(10), // por intervalo de 10 segundos
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0 // sem fila de espera
+            }));
+
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        await context.HttpContext.Response.WriteAsync(
+            "Limite de taxa excedido. Por favor tente novamente mais tarde.",
+            cancellationToken);
+    };
+});
+
 JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
 builder.Services
@@ -83,6 +105,8 @@ builder.Services
 
 
 var app = builder.Build();
+
+app.UseRateLimiter();
 
 if (app.Environment.IsDevelopment())
 {

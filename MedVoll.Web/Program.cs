@@ -31,6 +31,18 @@ builder.Services.AddHttpClient(
     {
         // Configura o endereço-base do cliente nomeado.
         client.BaseAddress = new Uri(httpClientUrl);
+    })
+    .SetHandlerLifetime(TimeSpan.FromMinutes(5)) // Recria o handler a cada 5 minutos
+    .AddStandardResilienceHandler(options =>
+    {
+        options.Retry.MaxRetryAttempts = 10;
+        options.Retry.OnRetry = args =>
+        {
+            var exception = args.Outcome.Exception!;
+            Console.WriteLine($"Falha na chamada à API! Tentando novamente em 5 segundos. Msg: {exception.Message}");
+            return default;
+        };
+        options.Retry.Delay = TimeSpan.FromSeconds(5); // Intervalo entre tentativas
     });
 
 JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
